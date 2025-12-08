@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'; // Rebuild trigger
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -47,7 +47,13 @@ export default function SignIn() {
 
             <div className={styles.authContainer}>
                 <div className={styles.authCard}>
-                    <h1 className={styles.authTitle}>Welcome Back</h1>
+                    <div className={styles.logoContainer}>
+                        <img src="/android-chrome-192x192.png" alt="App Logo" className={styles.authLogo} />
+                    </div>
+                    <div className={styles.authBrand}>
+                        <h2 className={styles.authTitle}>Fasting Tracker</h2>
+                        <b className={styles.authSubtitle} style={{ display: 'block', marginBottom: 0 }}>Welcome Back</b>
+                    </div>
                     <p className={styles.authSubtitle}>Sign in to continue your fasting journey</p>
 
                     {error && (

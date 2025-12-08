@@ -66,7 +66,13 @@ export default function SignUp() {
 
             <div className={styles.authContainer}>
                 <div className={styles.authCard}>
-                    <h1 className={styles.authTitle}>Create Account</h1>
+                    <div className={styles.logoContainer}>
+                        <img src="/android-chrome-192x192.png" alt="App Logo" className={styles.authLogo} />
+                    </div>
+                    <div className={styles.authBrand}>
+                        <h2 className={styles.authTitle}>Fasting Tracker</h2>
+                        <b className={styles.authSubtitle} style={{ display: 'block', marginBottom: 0 }}>Create Account</b>
+                    </div>
                     <p className={styles.authSubtitle}>Start tracking your fasting journey</p>
 
                     {error && (
