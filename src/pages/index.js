@@ -3,6 +3,8 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
+import { IoPlayCircle, IoStopCircle } from 'react-icons/io5';
+import { IoMdClose } from 'react-icons/io';
 import styles from '@/styles/Home.module.css';
 import notificationService from '@/lib/notifications';
 
@@ -502,7 +504,15 @@ export default function FastingTracker() {
             className={`${styles.actionButton} ${isFasting ? styles.stopButton : styles.startButton}`}
             onClick={isFasting ? handleStopFasting : handleStartFasting}
           >
-            {isFasting ? '⏹ Stop Fasting' : '▶ Start Fasting'}
+            {isFasting ? (
+              <>
+                <IoStopCircle size={20} /> Stop Fasting
+              </>
+            ) : (
+              <>
+                <IoPlayCircle size={20} /> Start Fasting
+              </>
+            )}
           </button>
         </section>
 
