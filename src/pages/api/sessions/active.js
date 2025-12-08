@@ -1,8 +1,17 @@
 import dbConnect from '@/lib/mongodb';
 import Session from '@/models/Session';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 
 export default async function handler(req, res) {
     const { method } = req;
+    const session = await getServerSession(req, res, authOptions);
+
+    if (!session) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const userId = session.user.id;
 
     await dbConnect();
 
@@ -11,7 +20,7 @@ export default async function handler(req, res) {
             try {
                 // Get the current active session for the user
                 const session = await Session.findOne({
-                    userId: 'default-user',
+                    userId: userId,
                     isActive: true,
                 }).lean();
 

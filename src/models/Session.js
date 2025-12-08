@@ -34,6 +34,11 @@ const SessionSchema = new mongoose.Schema(
             default: true,
             index: true,
         },
+        notes: {
+            type: String,
+            default: '',
+            maxlength: 500,
+        },
     },
     {
         timestamps: true, // Adds createdAt and updatedAt fields

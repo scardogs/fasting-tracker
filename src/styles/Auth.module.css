@@ -1,0 +1,155 @@
+/* Auth Container */
+.authContainer {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: var(--background);
+}
+
+.authCard {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.authTitle {
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    text-align: center;
+    letter-spacing: -0.02em;
+}
+
+.authSubtitle {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+/* Form Styles */
+.authForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.formLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+}
+
+.formInput {
+    padding: 0.875rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.formInput:hover {
+    border-color: var(--primary-light);
+    background: var(--surface-secondary);
+}
+
+.formInput:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 152, 133, 0.08);
+}
+
+.formInput::placeholder {
+    color: var(--text-muted);
+}
+
+.submitButton {
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    margin-top: 0.5rem;
+}
+
+.submitButton:hover:not(:disabled) {
+    background: var(--primary-dark);
+    box-shadow: var(--shadow-md);
+}
+
+.submitButton:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.submitButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Error Message */
+.errorMessage {
+    background: rgba(220, 138, 120, 0.1);
+    border: 1px solid var(--error);
+    color: var(--error);
+    padding: 0.875rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Footer */
+.authFooter {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+}
+
+.authLink {
+    color: var(--primary);
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.authLink:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .authCard {
+        padding: 2rem 1.5rem;
+    }
+
+    .authTitle {
+        font-size: 1.5rem;
+    }
+}

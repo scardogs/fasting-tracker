@@ -1,0 +1,107 @@
+/* Charts Container */
+.chartsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-bottom: 4rem;
+}
+
+.chartCard {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+
+.chartCard:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.chartTitle {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.01em;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Heatmap Styles */
+.heatmapContainer {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12px, 1fr));
+    gap: 3px;
+    margin-bottom: 1rem;
+}
+
+.heatmapCell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.heatmapCell:hover {
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(124, 152, 133, 0.3);
+}
+
+.level0 {
+    background: var(--surface-secondary);
+}
+
+.level1 {
+    background: #d4e8d9;
+}
+
+.level2 {
+    background: #a3bfac;
+}
+
+.level3 {
+    background: #7c9885;
+}
+
+.level4 {
+    background: #5d7566;
+}
+
+.heatmapLegend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    justify-content: flex-end;
+}
+
+.legendCell {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .chartCard {
+        padding: 1.5rem;
+    }
+
+    .chartTitle {
+        font-size: 1rem;
+    }
+
+    .heatmapContainer {
+        grid-template-columns: repeat(auto-fill, minmax(10px, 1fr));
+        gap: 2px;
+    }
+}

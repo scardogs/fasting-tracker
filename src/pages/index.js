@@ -1,8 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
+import dynamic from 'next/dynamic';
 import styles from '@/styles/Home.module.css';
+import notificationService from '@/lib/notifications';
+
+// Dynamic import for Charts to avoid SSR issues with Recharts
+const Charts = dynamic(() => import('@/components/Charts'), { ssr: false });
 
 export default function FastingTracker() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   // State Management
   const [isFasting, setIsFasting] = useState(false);
   const [startTime, setStartTime] = useState(null);
@@ -12,12 +22,62 @@ export default function FastingTracker() {
   const [goalReached, setGoalReached] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sessionNotes, setSessionNotes] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [showCustomGoal, setShowCustomGoal] = useState(false);
+  const [customGoalInput, setCustomGoalInput] = useState('');
   const intervalRef = useRef(null);
 
   // Load data from database on mount
   useEffect(() => {
-    loadData();
-  }, []);
+    if (status === 'authenticated') {
+      loadData();
+      // Register service worker and request notification permission
+      notificationService.registerServiceWorker();
+      notificationService.requestPermission();
+    }
+  }, [status]);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    }
+  }, [status, router]);
+
+  // Timer logic
+  useEffect(() => {
+    if (isFasting && startTime) {
+      intervalRef.current = setInterval(() => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        setElapsedTime(elapsed);
+
+        // Check if goal is reached
+        const elapsedHours = elapsed / 3600;
+        if (elapsedHours >= goalHours && !goalReached) {
+          setGoalReached(true);
+          // Trigger notification
+          notificationService.notifyGoalReached(goalHours);
+        }
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isFasting, startTime, goalHours, goalReached]);
+
+  // Don't render anything while checking authentication
+  if (status === 'loading' || status === 'unauthenticated') {
+    return null;
+  }
 
   const loadData = async () => {
     try {
@@ -33,6 +93,13 @@ export default function FastingTracker() {
         setIsFasting(true);
         setStartTime(new Date(session.startTime).getTime());
         setGoalHours(session.goalHours);
+
+        // Check if it's a custom goal (not in preset values)
+        const presetGoals = [12, 14, 16, 18, 20, 24];
+        if (!presetGoals.includes(session.goalHours)) {
+          setShowCustomGoal(true);
+          setCustomGoalInput(session.goalHours.toString());
+        }
       }
 
       // Fetch session history
@@ -48,6 +115,7 @@ export default function FastingTracker() {
           duration: session.duration,
           goalHours: session.goalHours,
           goalReached: session.goalReached,
+          notes: session.notes || '',
         }));
         setFastingHistory(formattedHistory);
       }
@@ -58,33 +126,6 @@ export default function FastingTracker() {
       setLoading(false);
     }
   };
-
-  // Timer logic
-  useEffect(() => {
-    if (isFasting && startTime) {
-      intervalRef.current = setInterval(() => {
-        const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
-        setElapsedTime(elapsed);
-
-        // Check if goal is reached
-        const elapsedHours = elapsed / 3600;
-        if (elapsedHours >= goalHours && !goalReached) {
-          setGoalReached(true);
-        }
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isFasting, startTime, goalHours, goalReached]);
 
   // Format time display
   const formatTime = (seconds) => {
@@ -168,6 +209,7 @@ export default function FastingTracker() {
             endTime: endTime,
             duration: elapsedTime,
             goalReached: goalReachedValue,
+            notes: sessionNotes,
           },
         }),
       });
@@ -183,6 +225,7 @@ export default function FastingTracker() {
           duration: elapsedTime,
           goalHours: goalHours,
           goalReached: goalReachedValue,
+          notes: sessionNotes,
         };
 
         setFastingHistory([newSession, ...fastingHistory]);
@@ -190,6 +233,7 @@ export default function FastingTracker() {
         setStartTime(null);
         setElapsedTime(0);
         setGoalReached(false);
+        setSessionNotes('');
       } else {
         setError(data.error || 'Failed to stop session');
       }
@@ -229,22 +273,29 @@ export default function FastingTracker() {
     }
   };
 
-  // Delete session
+  // Delete session with confirmation
   const handleDeleteSession = async (sessionId) => {
+    setDeleteConfirm(sessionId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+
     try {
       const response = await fetch('/api/sessions', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({ sessionId: deleteConfirm }),
       });
 
       const data = await response.json();
 
       if (data.success) {
         // Remove from local state
-        setFastingHistory(fastingHistory.filter(session => session.id !== sessionId));
+        setFastingHistory(fastingHistory.filter(session => session.id !== deleteConfirm));
+        setDeleteConfirm(null);
       } else {
         setError(data.error || 'Failed to delete session');
       }
@@ -253,6 +304,7 @@ export default function FastingTracker() {
       setError('Failed to delete session. Please try again.');
     }
   };
+
 
   // Calculate analytics
   const calculateAnalytics = () => {
@@ -283,7 +335,49 @@ export default function FastingTracker() {
     };
   };
 
+  // Calculate streaks
+  const calculateStreaks = () => {
+    if (fastingHistory.length === 0) {
+      return { currentStreak: 0, longestStreak: 0 };
+    }
+
+    // Sort sessions by date (most recent first)
+    const sortedSessions = [...fastingHistory].sort((a, b) => b.startTime - a.startTime);
+
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+    let lastDate = null;
+
+    for (const session of sortedSessions) {
+      if (!session.goalReached) continue;
+
+      const sessionDate = new Date(session.startTime).toDateString();
+
+      if (!lastDate) {
+        tempStreak = 1;
+        currentStreak = 1;
+      } else {
+        const daysDiff = Math.floor((new Date(lastDate) - new Date(sessionDate)) / (1000 * 60 * 60 * 24));
+
+        if (daysDiff === 1) {
+          tempStreak++;
+          if (currentStreak > 0) currentStreak++;
+        } else if (daysDiff > 1) {
+          currentStreak = 0;
+          tempStreak = 1;
+        }
+      }
+
+      longestStreak = Math.max(longestStreak, tempStreak);
+      lastDate = sessionDate;
+    }
+
+    return { currentStreak, longestStreak };
+  };
+
   const analytics = calculateAnalytics();
+  const streaks = calculateStreaks();
 
   // Calculate progress percentage
   const progressPercentage = Math.min((elapsedTime / (goalHours * 3600)) * 100, 100);
@@ -332,8 +426,19 @@ export default function FastingTracker() {
 
         {/* Header */}
         <header className={styles.header}>
-          <h1 className={styles.title}>Fasting Tracker</h1>
-          <p className={styles.subtitle}>Track your fasting window easily</p>
+          <div>
+            <h1 className={styles.title}>Fasting Tracker</h1>
+            <p className={styles.subtitle}>Track your fasting window easily</p>
+          </div>
+          <div className={styles.headerActions}>
+            <span className={styles.userName}>Hello, {session?.user?.name}</span>
+            <button
+              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+              className={styles.logoutButton}
+            >
+              Sign Out
+            </button>
+          </div>
         </header>
 
         {/* Main Timer Section */}
@@ -420,18 +525,61 @@ export default function FastingTracker() {
 
                 <div className={styles.summaryItem}>
                   <span className={styles.summaryLabel}>Goal</span>
-                  <select
-                    className={styles.goalSelect}
-                    value={goalHours}
-                    onChange={(e) => handleGoalChange(parseInt(e.target.value))}
-                  >
-                    <option value={12}>12 hours</option>
-                    <option value={14}>14 hours</option>
-                    <option value={16}>16 hours</option>
-                    <option value={18}>18 hours</option>
-                    <option value={20}>20 hours</option>
-                    <option value={24}>24 hours</option>
-                  </select>
+                  <div className={styles.goalContainer}>
+                    <select
+                      className={styles.goalSelect}
+                      value={showCustomGoal ? 'custom' : goalHours}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === 'custom') {
+                          setShowCustomGoal(true);
+                          setCustomGoalInput(goalHours.toString());
+                        } else {
+                          setShowCustomGoal(false);
+                          handleGoalChange(parseInt(value));
+                        }
+                      }}
+                    >
+                      <option value={12}>12 hours</option>
+                      <option value={14}>14 hours</option>
+                      <option value={16}>16 hours</option>
+                      <option value={18}>18 hours</option>
+                      <option value={20}>20 hours</option>
+                      <option value={24}>24 hours</option>
+                      <option value="custom">Custom...</option>
+                    </select>
+                    {showCustomGoal && (
+                      <div className={styles.customGoalInput}>
+                        <input
+                          type="number"
+                          min="1"
+                          max="72"
+                          value={customGoalInput}
+                          onChange={(e) => setCustomGoalInput(e.target.value)}
+                          onBlur={() => {
+                            const hours = parseInt(customGoalInput);
+                            if (hours >= 1 && hours <= 72) {
+                              handleGoalChange(hours);
+                            } else {
+                              setCustomGoalInput(goalHours.toString());
+                            }
+                          }}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              const hours = parseInt(customGoalInput);
+                              if (hours >= 1 && hours <= 72) {
+                                handleGoalChange(hours);
+                                e.target.blur();
+                              }
+                            }
+                          }}
+                          placeholder="Enter hours"
+                          className={styles.customInput}
+                        />
+                        <span className={styles.customInputLabel}>hours</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -483,6 +631,14 @@ export default function FastingTracker() {
                 <div className={styles.analyticsLabel}>Total Hours Fasted</div>
               </div>
             </div>
+          </section>
+        )}
+
+        {/* Visual Charts Section */}
+        {fastingHistory.length > 0 && (
+          <section className={styles.chartsSection}>
+            <h2 className={styles.sectionTitle}>Visual Analytics</h2>
+            <Charts fastingHistory={fastingHistory} />
           </section>
         )}
 

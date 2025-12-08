@@ -1,8 +1,17 @@
 import dbConnect from '@/lib/mongodb';
 import Session from '@/models/Session';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 
 export default async function handler(req, res) {
     const { method } = req;
+    const session = await getServerSession(req, res, authOptions);
+
+    if (!session) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const userId = session.user.id;
 
     await dbConnect();
 
@@ -11,7 +20,7 @@ export default async function handler(req, res) {
             try {
                 // Get all completed sessions for the user, sorted by most recent
                 const sessions = await Session.find({
-                    userId: 'default-user',
+                    userId: userId,
                     isActive: false,
                 })
                     .sort({ createdAt: -1 })
@@ -32,7 +41,7 @@ export default async function handler(req, res) {
                 if (action === 'start') {
                     // Check if there's already an active session
                     const existingActive = await Session.findOne({
-                        userId: 'default-user',
+                        userId: userId,
                         isActive: true,
                     });
 
@@ -45,7 +54,7 @@ export default async function handler(req, res) {
 
                     // Create new active session
                     const session = await Session.create({
-                        userId: 'default-user',
+                        userId: userId,
                         startTime: new Date(sessionData.startTime),
                         goalHours: sessionData.goalHours,
                         isActive: true,
@@ -56,7 +65,7 @@ export default async function handler(req, res) {
                     // Find and update the active session
                     const session = await Session.findOneAndUpdate(
                         {
-                            userId: 'default-user',
+                            userId: userId,
                             isActive: true,
                         },
                         {
@@ -80,7 +89,7 @@ export default async function handler(req, res) {
                     // Update the goal for the active session
                     const session = await Session.findOneAndUpdate(
                         {
-                            userId: 'default-user',
+                            userId: userId,
                             isActive: true,
                         },
                         {
