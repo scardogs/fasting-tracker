@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fasting-tracker-v1';
+const CACHE_NAME = 'fasting-tracker-v2';
 const urlsToCache = [
     '/',
     '/auth/signin',
@@ -32,10 +32,21 @@ self.addEventListener('activate', (event) => {
 
 // Fetch handler
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => response || fetch(event.request))
-    );
+    // specialized strategy for navigation requests (HTML pages)
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .catch(() => {
+                    return caches.match(event.request);
+                })
+        );
+    } else {
+        // cache-first strategy for static assets
+        event.respondWith(
+            caches.match(event.request)
+                .then((response) => response || fetch(event.request))
+        );
+    }
 });
 
 // Push notification handler
