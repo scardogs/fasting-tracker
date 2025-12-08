@@ -106,6 +106,33 @@ export default async function handler(req, res) {
             }
             break;
 
+        case 'DELETE':
+            try {
+                const { sessionId } = req.body;
+
+                if (!sessionId) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Session ID is required',
+                    });
+                }
+
+                const deletedSession = await Session.findByIdAndDelete(sessionId);
+
+                if (!deletedSession) {
+                    return res.status(404).json({
+                        success: false,
+                        error: 'Session not found',
+                    });
+                }
+
+                res.status(200).json({ success: true, data: deletedSession });
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                res.status(400).json({ success: false, error: error.message });
+            }
+            break;
+
         default:
             res.status(400).json({ success: false, error: 'Method not allowed' });
             break;

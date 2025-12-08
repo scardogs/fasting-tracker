@@ -229,6 +229,62 @@ export default function FastingTracker() {
     }
   };
 
+  // Delete session
+  const handleDeleteSession = async (sessionId) => {
+    try {
+      const response = await fetch('/api/sessions', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Remove from local state
+        setFastingHistory(fastingHistory.filter(session => session.id !== sessionId));
+      } else {
+        setError(data.error || 'Failed to delete session');
+      }
+    } catch (err) {
+      console.error('Error deleting session:', err);
+      setError('Failed to delete session. Please try again.');
+    }
+  };
+
+  // Calculate analytics
+  const calculateAnalytics = () => {
+    if (fastingHistory.length === 0) {
+      return {
+        totalSessions: 0,
+        averageDuration: 0,
+        successRate: 0,
+        longestFast: 0,
+        totalHoursFasted: 0,
+      };
+    }
+
+    const totalSessions = fastingHistory.length;
+    const totalDuration = fastingHistory.reduce((sum, session) => sum + session.duration, 0);
+    const averageDuration = totalDuration / totalSessions;
+    const successfulSessions = fastingHistory.filter(session => session.goalReached).length;
+    const successRate = (successfulSessions / totalSessions) * 100;
+    const longestFast = Math.max(...fastingHistory.map(session => session.duration));
+    const totalHoursFasted = totalDuration / 3600;
+
+    return {
+      totalSessions,
+      averageDuration,
+      successRate,
+      longestFast,
+      totalHoursFasted,
+    };
+  };
+
+  const analytics = calculateAnalytics();
+
   // Calculate progress percentage
   const progressPercentage = Math.min((elapsedTime / (goalHours * 3600)) * 100, 100);
   const time = formatTime(elapsedTime);
@@ -396,6 +452,40 @@ export default function FastingTracker() {
           </section>
         )}
 
+        {/* Analytics Section */}
+        {fastingHistory.length > 0 && (
+          <section className={styles.analyticsSection}>
+            <h2 className={styles.sectionTitle}>Analytics</h2>
+
+            <div className={styles.analyticsGrid}>
+              <div className={styles.analyticsCard}>
+                <div className={styles.analyticsValue}>{analytics.totalSessions}</div>
+                <div className={styles.analyticsLabel}>Total Sessions</div>
+              </div>
+
+              <div className={styles.analyticsCard}>
+                <div className={styles.analyticsValue}>{formatDuration(analytics.averageDuration)}</div>
+                <div className={styles.analyticsLabel}>Average Duration</div>
+              </div>
+
+              <div className={styles.analyticsCard}>
+                <div className={styles.analyticsValue}>{Math.round(analytics.successRate)}%</div>
+                <div className={styles.analyticsLabel}>Success Rate</div>
+              </div>
+
+              <div className={styles.analyticsCard}>
+                <div className={styles.analyticsValue}>{formatDuration(analytics.longestFast)}</div>
+                <div className={styles.analyticsLabel}>Longest Fast</div>
+              </div>
+
+              <div className={styles.analyticsCard}>
+                <div className={styles.analyticsValue}>{Math.round(analytics.totalHoursFasted)}h</div>
+                <div className={styles.analyticsLabel}>Total Hours Fasted</div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Daily Logs Section */}
         {fastingHistory.length > 0 && (
           <section className={styles.logsSection}>
@@ -412,9 +502,18 @@ export default function FastingTracker() {
                         year: 'numeric'
                       })}
                     </span>
-                    {session.goalReached && (
-                      <span className={styles.goalBadge}>✓ Goal Reached</span>
-                    )}
+                    <div className={styles.logHeaderRight}>
+                      {session.goalReached && (
+                        <span className={styles.goalBadge}>✓ Goal Reached</span>
+                      )}
+                      <button
+                        className={styles.deleteButton}
+                        onClick={() => handleDeleteSession(session.id)}
+                        title="Delete session"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
 
                   <div className={styles.logDetails}>
