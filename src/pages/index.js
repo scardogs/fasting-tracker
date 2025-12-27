@@ -42,12 +42,10 @@ export default function FastingTracker() {
 
   const intervalRef = useRef(null);
 
-  // Load data from database on mount
+  // Load all dashboard data on mount
   useEffect(() => {
     if (status === 'authenticated') {
-      loadData();
-      loadHydrationData();
-      loadMoodData();
+      loadDashboardData();
       // Register service worker and request notification permission
       notificationService.registerServiceWorker();
       notificationService.requestPermission();
@@ -95,36 +93,35 @@ export default function FastingTracker() {
     return null;
   }
 
-  const loadData = async () => {
+  const loadDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch active session
-      const activeRes = await fetch('/api/sessions/active');
-      const activeData = await activeRes.json();
+      const res = await fetch('/api/dashboard');
+      const json = await res.json();
 
-      if (activeData.success && activeData.data) {
-        const session = activeData.data;
-        setIsFasting(true);
-        setStartTime(new Date(session.startTime).getTime());
-        setGoalHours(session.goalHours);
+      if (json.success) {
+        const { activeSession, history, hydration, moodLogs } = json.data;
 
-        // Check if it's a custom goal (not in preset values)
-        const presetGoals = [12, 14, 16, 18, 20, 24];
-        if (!presetGoals.includes(session.goalHours)) {
-          setShowCustomGoal(true);
-          setCustomGoalInput(session.goalHours.toString());
+        // Active Session
+        if (activeSession) {
+          setIsFasting(true);
+          setStartTime(new Date(activeSession.startTime).getTime());
+          setGoalHours(activeSession.goalHours);
+
+          const presetGoals = [12, 14, 16, 18, 20, 24];
+          if (!presetGoals.includes(activeSession.goalHours)) {
+            setShowCustomGoal(true);
+            setCustomGoalInput(activeSession.goalHours.toString());
+          }
+        } else {
+          setIsFasting(false);
+          setStartTime(null);
         }
-      }
 
-      // Fetch session history
-      const historyRes = await fetch('/api/sessions');
-      const historyData = await historyRes.json();
-
-      if (historyData.success) {
-        // Convert MongoDB sessions to frontend format
-        const formattedHistory = historyData.data.map(session => ({
+        // History
+        const formattedHistory = history.map(session => ({
           id: session._id,
           startTime: new Date(session.startTime).getTime(),
           endTime: new Date(session.endTime).getTime(),
@@ -134,43 +131,39 @@ export default function FastingTracker() {
           notes: session.notes || '',
         }));
         setFastingHistory(formattedHistory);
+
+        // Hydration
+        setHydrationData(hydration);
+
+        // Mood
+        setMoodLogs(moodLogs);
+      } else {
+        setError(json.error || 'Failed to load dashboard data');
       }
     } catch (err) {
-      console.error('Error loading data:', err);
-      setError('Failed to load data from database. Please refresh the page.');
+      console.error('Error loading dashboard:', err);
+      setError('Connection error. Please check your internet and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadHydrationData = async () => {
-    try {
-      setHydrationLoading(true);
-      const res = await fetch('/api/hydration');
-      const data = await res.json();
-      if (data.success) {
-        setHydrationData(data.data);
-      }
-    } catch (err) {
-      console.error('Error loading hydration data:', err);
-    } finally {
-      setHydrationLoading(false);
-    }
-  };
-
-  const loadMoodData = async () => {
-    try {
-      const res = await fetch('/api/mood');
-      const data = await res.json();
-      if (data.success) {
-        setMoodLogs(data.data);
-      }
-    } catch (err) {
-      console.error('Error loading mood data:', err);
-    }
-  };
+  const loadData = loadDashboardData; // Backward compatibility if needed elsewhere
+  const loadHydrationData = loadDashboardData;
+  const loadMoodData = loadDashboardData;
 
   const handleAddMood = async () => {
+    // Optimistic Update
+    const previousLogs = [...moodLogs];
+    const newLog = {
+      _id: 'temp-' + Date.now(),
+      mood: currentMood,
+      energy: currentEnergy,
+      timestamp: new Date().toISOString()
+    };
+
+    setMoodLogs(prev => [newLog, ...prev]);
+
     try {
       const res = await fetch('/api/mood', {
         method: 'POST',
@@ -179,14 +172,35 @@ export default function FastingTracker() {
       });
       const data = await res.json();
       if (data.success) {
-        loadMoodData();
+        // Replace temp ID with actual ID
+        setMoodLogs(prev => prev.map(log => log._id === newLog._id ? data.data : log));
+      } else {
+        setMoodLogs(previousLogs);
+        setError('Failed to save mood log.');
       }
     } catch (err) {
       console.error('Error adding mood log:', err);
+      setMoodLogs(previousLogs);
+      setError('Connection error.');
     }
   };
 
   const handleAddHydration = async (amount) => {
+    // Optimistic Update
+    const previousData = { ...hydrationData };
+    const newLog = {
+      _id: 'temp-' + Date.now(),
+      amount,
+      timestamp: new Date().toISOString(),
+      goal: hydrationData.goal
+    };
+
+    setHydrationData(prev => ({
+      ...prev,
+      total: prev.total + amount,
+      logs: [newLog, ...prev.logs]
+    }));
+
     try {
       const res = await fetch('/api/hydration', {
         method: 'POST',
@@ -194,12 +208,21 @@ export default function FastingTracker() {
         body: JSON.stringify({ amount, goal: hydrationData.goal }),
       });
       const data = await res.json();
-      if (data.success) {
-        // Optimistic update or just reload
-        loadHydrationData();
+      if (!data.success) {
+        // Rollback on failure
+        setHydrationData(previousData);
+        setError('Failed to save hydration log.');
+      } else {
+        // Replace temp ID with actual ID from server
+        setHydrationData(prev => ({
+          ...prev,
+          logs: prev.logs.map(log => log._id === newLog._id ? data.data : log)
+        }));
       }
     } catch (err) {
       console.error('Error adding hydration:', err);
+      setHydrationData(previousData);
+      setError('Connection error.');
     }
   };
 
@@ -527,7 +550,6 @@ export default function FastingTracker() {
                 cx="140"
                 cy="140"
                 r="120"
-                margin-top="200px"
                 fill="none"
                 stroke="var(--border)"
                 strokeWidth="20"
@@ -890,6 +912,28 @@ export default function FastingTracker() {
               ))}
             </div>
           </section>
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modal}>
+              <h3>Delete Session?</h3>
+              <p>Are you sure you want to delete this fasting session? This action cannot be undone.</p>
+              <div className={styles.modalActions}>
+                <button
+                  className={styles.cancelBtn}
+                  onClick={() => setDeleteConfirm(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.confirmDeleteBtn}
+                  onClick={confirmDelete}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>
