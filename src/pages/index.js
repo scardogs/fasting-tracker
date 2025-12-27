@@ -527,12 +527,15 @@ export default function FastingTracker() {
                 cx="140"
                 cy="140"
                 r="120"
+                margin-top="200px"
                 fill="none"
                 stroke="var(--border)"
                 strokeWidth="20"
               />
               {/* Progress Circle */}
               <circle
+
+
                 cx="140"
                 cy="140"
                 r="120"
