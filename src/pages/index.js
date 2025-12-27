@@ -3,13 +3,15 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
-import { IoPlayCircle, IoStopCircle } from 'react-icons/io5';
-import { IoMdClose } from 'react-icons/io';
+import { IoPlayCircle, IoStopCircle, IoWater } from 'react-icons/io5';
+import { IoMdClose, IoMdAdd, IoMdTrash } from 'react-icons/io';
 import styles from '@/styles/Home.module.css';
 import notificationService from '@/lib/notifications';
 
 // Dynamic import for Charts to avoid SSR issues with Recharts
 const Charts = dynamic(() => import('@/components/Charts'), { ssr: false });
+const FastingStages = dynamic(() => import('@/components/FastingStages'), { ssr: false });
+const Header = dynamic(() => import('@/components/Header'), { ssr: false });
 
 export default function FastingTracker() {
   const { data: session, status } = useSession();
@@ -28,12 +30,24 @@ export default function FastingTracker() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [showCustomGoal, setShowCustomGoal] = useState(false);
   const [customGoalInput, setCustomGoalInput] = useState('');
+
+  // Hydration State
+  const [hydrationData, setHydrationData] = useState({ logs: [], total: 0, goal: 2000 });
+  const [hydrationLoading, setHydrationLoading] = useState(false);
+
+  // Mood/Energy State
+  const [moodLogs, setMoodLogs] = useState([]);
+  const [currentEnergy, setCurrentEnergy] = useState(3);
+  const [currentMood, setCurrentMood] = useState('😀');
+
   const intervalRef = useRef(null);
 
   // Load data from database on mount
   useEffect(() => {
     if (status === 'authenticated') {
       loadData();
+      loadHydrationData();
+      loadMoodData();
       // Register service worker and request notification permission
       notificationService.registerServiceWorker();
       notificationService.requestPermission();
@@ -126,6 +140,82 @@ export default function FastingTracker() {
       setError('Failed to load data from database. Please refresh the page.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadHydrationData = async () => {
+    try {
+      setHydrationLoading(true);
+      const res = await fetch('/api/hydration');
+      const data = await res.json();
+      if (data.success) {
+        setHydrationData(data.data);
+      }
+    } catch (err) {
+      console.error('Error loading hydration data:', err);
+    } finally {
+      setHydrationLoading(false);
+    }
+  };
+
+  const loadMoodData = async () => {
+    try {
+      const res = await fetch('/api/mood');
+      const data = await res.json();
+      if (data.success) {
+        setMoodLogs(data.data);
+      }
+    } catch (err) {
+      console.error('Error loading mood data:', err);
+    }
+  };
+
+  const handleAddMood = async () => {
+    try {
+      const res = await fetch('/api/mood', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood: currentMood, energy: currentEnergy }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadMoodData();
+      }
+    } catch (err) {
+      console.error('Error adding mood log:', err);
+    }
+  };
+
+  const handleAddHydration = async (amount) => {
+    try {
+      const res = await fetch('/api/hydration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, goal: hydrationData.goal }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Optimistic update or just reload
+        loadHydrationData();
+      }
+    } catch (err) {
+      console.error('Error adding hydration:', err);
+    }
+  };
+
+  const handleDeleteHydration = async (id) => {
+    try {
+      const res = await fetch('/api/hydration', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadHydrationData();
+      }
+    } catch (err) {
+      console.error('Error deleting hydration log:', err);
     }
   };
 
@@ -417,6 +507,8 @@ export default function FastingTracker() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
+      <Header />
+
       <div className={styles.container}>
         {/* Error Message */}
         {error && (
@@ -425,23 +517,6 @@ export default function FastingTracker() {
             <button onClick={() => setError(null)}>✕</button>
           </div>
         )}
-
-        {/* Header */}
-        <header className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Fasting Tracker</h1>
-            <p className={styles.subtitle}>Track your fasting window easily</p>
-          </div>
-          <div className={styles.headerActions}>
-            <span className={styles.userName}>Hello, {session?.user?.name}</span>
-            <button
-              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              className={styles.logoutButton}
-            >
-              Sign Out
-            </button>
-          </div>
-        </header>
 
         {/* Main Timer Section */}
         <section className={styles.timerSection}>
@@ -491,6 +566,8 @@ export default function FastingTracker() {
               </div>
             </div>
           </div>
+
+          <FastingStages elapsedTimeSeconds={elapsedTime} />
 
           {/* Goal Reached Notification */}
           {goalReached && (
@@ -563,12 +640,11 @@ export default function FastingTracker() {
                         <input
                           type="number"
                           min="1"
-                          max="72"
                           value={customGoalInput}
                           onChange={(e) => setCustomGoalInput(e.target.value)}
                           onBlur={() => {
                             const hours = parseInt(customGoalInput);
-                            if (hours >= 1 && hours <= 72) {
+                            if (hours >= 1) {
                               handleGoalChange(hours);
                             } else {
                               setCustomGoalInput(goalHours.toString());
@@ -577,7 +653,7 @@ export default function FastingTracker() {
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               const hours = parseInt(customGoalInput);
-                              if (hours >= 1 && hours <= 72) {
+                              if (hours >= 1) {
                                 handleGoalChange(hours);
                                 e.target.blur();
                               }
@@ -643,6 +719,115 @@ export default function FastingTracker() {
             </div>
           </section>
         )}
+
+        {/* Hydration Tracker Section */}
+        <section className={styles.hydrationSection}>
+          <div className={`${styles.summaryCard} ${styles.hydrationCard}`}>
+            <div className={styles.hydrationHeader}>
+              <h2 className={styles.sectionTitle}>
+                <IoWater className={styles.waterIcon} /> Hydration Companion
+              </h2>
+              <div className={styles.hydrationTotal}>
+                <span className={styles.totalAmount}>{hydrationData.total}</span>
+                <span className={styles.goalSlash}>/</span>
+                <span className={styles.goalAmount}>{hydrationData.goal}ml</span>
+              </div>
+            </div>
+
+            <div className={styles.hydrationProgressContainer}>
+              <div className={styles.progressBar}>
+                <div
+                  className={`${styles.progressBarFill} ${styles.waterFill}`}
+                  style={{ width: `${Math.min((hydrationData.total / hydrationData.goal) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className={styles.quickAddGrid}>
+              {[250, 500, 750].map((amount) => (
+                <button
+                  key={amount}
+                  className={styles.quickAddButton}
+                  onClick={() => handleAddHydration(amount)}
+                >
+                  <IoMdAdd /> {amount}ml
+                </button>
+              ))}
+            </div>
+
+            {hydrationData.logs.length > 0 && (
+              <div className={styles.hydrationLogs}>
+                <h3 className={styles.subTitleSmall}>Today's Logs</h3>
+                <div className={styles.logsListSmall}>
+                  {hydrationData.logs.map((log) => (
+                    <div key={log._id} className={styles.logItemSmall}>
+                      <span>{log.amount}ml at {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <button
+                        className={styles.deleteLogSmall}
+                        onClick={() => handleDeleteHydration(log._id)}
+                      >
+                        <IoMdTrash size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Mood & Energy Section */}
+        <section className={styles.moodSection}>
+          <div className={styles.moodCard}>
+            <h2 className={styles.sectionTitle}>Current Feeling</h2>
+            <div className={styles.moodControls}>
+              <div className={styles.moodSelector}>
+                {['😀', '😐', '😔', '😫', '🔋'].map((m) => (
+                  <button
+                    key={m}
+                    className={`${styles.moodBtn} ${currentMood === m ? styles.moodBtnActive : ''}`}
+                    onClick={() => setCurrentMood(m)}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.energySelector}>
+                <span className={styles.energyLabel}>Energy: {currentEnergy}/5</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={currentEnergy}
+                  onChange={(e) => setCurrentEnergy(parseInt(e.target.value))}
+                  className={styles.energyRange}
+                />
+              </div>
+              <button className={styles.logMoodButton} onClick={handleAddMood}>
+                Log Feeling
+              </button>
+            </div>
+
+            {moodLogs.length > 0 && (
+              <div className={styles.moodHistory}>
+                <h3 className={styles.subTitleSmall}>Recent Logs</h3>
+                <div className={styles.moodGridScroll}>
+                  {moodLogs.slice(0, 5).map((log) => (
+                    <div key={log._id} className={styles.moodLogItem}>
+                      <span className={styles.logMoodIcon}>{log.mood}</span>
+                      <div className={styles.logMoodInfo}>
+                        <span className={styles.logEnergy}>Energy: {log.energy}</span>
+                        <span className={styles.logTime}>
+                          {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Visual Charts Section */}
         {fastingHistory.length > 0 && (

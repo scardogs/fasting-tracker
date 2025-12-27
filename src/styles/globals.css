@@ -1,20 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Minimalist Color Palette - Sage & Warm Neutrals */
+  /* Minimalist Color Palette - Sage & Warm Neutrals (Dark Mode Focused) */
   --primary: #7c9885;
   --primary-light: #a8bfad;
   --primary-dark: #5a7360;
   --accent: #d4a574;
 
-  /* Neutral Colors */
-  --background: #fafaf9;
-  --surface: #ffffff;
-  --surface-secondary: #f5f5f4;
-  --border: #e7e5e4;
-  --border-light: #f5f5f4;
-  --text-primary: #292524;
-  --text-secondary: #78716c;
+  /* Permanent Dark Theme Colors */
+  --background: #1c1917;
+  --surface: #292524;
+  --surface-secondary: #44403c;
+  --border: #44403c;
+  --border-light: #57534e;
+  --text-primary: #fafaf9;
+  --text-secondary: #d6d3d1;
   --text-muted: #a8a29e;
 
   /* Status Colors */
@@ -22,27 +22,14 @@
   --warning: #d4a574;
   --error: #dc8a78;
 
-  /* Shadows - Minimal */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.03);
-  --shadow-md: 0 2px 4px 0 rgb(0 0 0 / 0.04);
-  --shadow-lg: 0 4px 8px 0 rgb(0 0 0 / 0.05);
+  /* Shadows - Minimal (Adjusted for dark mode) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 2px 4px 0 rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 4px 8px 0 rgb(0 0 0 / 0.5);
 
   /* Gradients - Subtle */
   --gradient-primary: linear-gradient(135deg, #7c9885 0%, #a8bfad 100%);
   --gradient-accent: linear-gradient(135deg, #d4a574 0%, #e8c9a0 100%);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1c1917;
-    --surface: #292524;
-    --surface-secondary: #44403c;
-    --border: #44403c;
-    --border-light: #57534e;
-    --text-primary: #fafaf9;
-    --text-secondary: #d6d3d1;
-    --text-muted: #a8a29e;
-  }
 }
 
 * {

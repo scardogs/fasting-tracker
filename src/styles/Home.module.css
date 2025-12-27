@@ -1,7 +1,7 @@
 /* Main Container */
 .container {
   min-height: 100vh;
-  padding: 3rem 1rem;
+  padding: calc(64px + 3rem) 1rem 3rem 1rem;
   max-width: 720px;
   margin: 0 auto;
 }
@@ -625,6 +625,350 @@
 
 .errorBanner button:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+/* Hydration Section */
+.hydrationSection {
+  margin-bottom: 4rem;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.hydrationCard {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.hydrationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.waterIcon {
+  color: #3b82f6;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.hydrationTotal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.totalAmount {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.goalSlash {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.goalAmount {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.hydrationProgressContainer {
+  margin-bottom: 2rem;
+}
+
+.waterFill {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+}
+
+.quickAddGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.quickAddButton {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.quickAddButton:hover {
+  background: var(--surface);
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.quickAddButton:active {
+  transform: translateY(0);
+}
+
+.hydrationLogs {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.subTitleSmall {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.logsListSmall {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.logItemSmall {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-secondary);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.deleteLogSmall {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.deleteLogSmall:hover {
+  color: var(--error);
+  background: #fee2e2;
+}
+
+/* Fasting Stages */
+.stagesCard {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid var(--border);
+  animation: fadeIn 0.6s ease-out;
+}
+
+.stageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.stageTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stageTime {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.stageDescription {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.stageProgressWrapper {
+  margin-bottom: 1rem;
+}
+
+.stageProgressBar {
+  height: 6px;
+  background: var(--surface-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.stageProgressFill {
+  height: 100%;
+  transition: width 0.5s ease, background-color 0.5s ease;
+}
+
+.nextStageLabel {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: right;
+  font-weight: 500;
+}
+
+.allStages {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.stageDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.stageDotActive {
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Mood Section */
+.moodSection {
+  margin-bottom: 4rem;
+  animation: fadeIn 0.9s ease-out;
+}
+
+.moodCard {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+}
+
+.moodControls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.moodSelector {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.moodBtn {
+  font-size: 1.5rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.moodBtn:hover {
+  background: var(--surface);
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.moodBtnActive {
+  background: var(--surface-secondary);
+  border-color: var(--primary);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(124, 152, 133, 0.2);
+}
+
+.energySelector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.energyLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.energyRange {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+.logMoodButton {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logMoodButton:hover {
+  background: var(--primary-dark);
+}
+
+.moodHistory {
+  border-top: 1px solid var(--border-light);
+  padding-top: 1.5rem;
+}
+
+.moodGridScroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  scrollbar-width: thin;
+}
+
+.moodLogItem {
+  min-width: 120px;
+  background: var(--surface-secondary);
+  padding: 0.75rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--border-light);
+}
+
+.logMoodIcon {
+  font-size: 1.5rem;
+}
+
+.logMoodInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.logEnergy {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.logTime {
+  font-size: 0.65rem;
+  color: var(--text-muted);
 }
 
 /* Responsive Design */
